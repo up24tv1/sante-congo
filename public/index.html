@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+      <meta charset="UTF-8"/>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+      <meta name="theme-color" content="#007FCC"/>
+      <meta name="description" content="Assistant sante gratuit pour la Republique Democratique du Congo. Donnees OMS et Ministere de la Sante."/>
+      <title>Sante Congo AI</title>
+    <link rel="manifest" href="manifest.json"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+    <style>
+          *{box-sizing:border-box;margin:0;padding:0;}
+          body{font-family:'Segoe UI',Arial,sans-serif;background:#F0F8FF;overscroll-behavior:none;}
+          ::-webkit-scrollbar{width:4px;}
+          ::-webkit-scrollbar-thumb{background:#B0D8F0;border-radius:4px;}
+          @keyframes bounce{0%,80%,100%{transform:translateY(0);opacity:.4}40%{transform:translateY(-6px);opacity:1}}
+          @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+          @keyframes slideUp{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
+          .card:hover{transform:scale(1.04) translateY(-3px)!important;}
+          textarea:focus{outline:none;}
+        </style>
+  </head>
+  <body>
+    <div id="root"></div>div>
+    <script type="text/babel">
+      const { useState, useRef, useEffect } = React;
+
+      const C = {
+          blue:"#007FCC",blueDk:"#005F99",blueLt:"#E6F4FB",bluePale:"#F0F8FF",
+          red:"#CE1021",yellow:"#F7D618",yellowDk:"#C9A800",yellowLt:"#FFFBE6",
+          white:"#FFFFFF",text:"#1A1A2E",gray:"#6B7280",grayLt:"#F3F4F6",
+      };
+
+      const LANGS = {
+          fr:{name:"Francais",flag:"\u{1F1EB}\u{1F1F7}",
+                  welcome:"Bonjour ! Je suis votre assistant sante gratuit pour la RDC. Posez-moi vos questions sur la sante, les symptomes, les medicaments ou la prevention.",
+                  placeholder:"Ecrivez votre question ici...",send:"Envoyer",clear:"Nouvelle conversation",
+                  home:"Accueil",chat:"IA Sante",
+                  heroTitle:"Votre sante, notre priorite",
+                  heroSub:"Assistant sante gratuit pour tous les Congolais - Donnees officielles OMS et Ministere de la Sante",
+                  statsLabel:["Gratuit","Maladies","Langues","Acces"],statsVal:["\u2713","15+","3","100%"],
+                  askAI:"Demander a l'IA \u2192",learnMore:"En savoir plus",modalClose:"Fermer",
+                  tips:"Conseils cles:",emergency:"\u{1F6A8} Urgences: 112",
+                  aboutTitle:"Pourquoi Sante Congo ?",
+                  aboutText:"La RDC compte moins d'1 medecin pour 10 000 habitants. Sante Congo AI comble ce vide en fournissant des informations medicales fiables, gratuitement, dans votre langue.",
+                  partners:"Donnees officielles de :",cardsTitle:"Themes de Sante",cardsSub:"Appuyez pour explorer",
+             },
+          ln:{name:"Lingala",flag:"\u{1F1E8}\u{1F1E9}",
+                  welcome:"Mbote! Ngai nazali motambolisi ya bokolongono ya ofele. Tuna ngai mituna na bokolongono, maladi to nkisi.",
+                  placeholder:"Koma motuna na yo awa...",send:"Tinda",clear:"Kolobela ya sika",
+                  home:"Ndako",chat:"IA Sante",
+                  heroTitle:"Bokolongono na yo, ntina na biso",
+                  heroSub:"Motambolisi ya ofele mpo na Bakongo nyonso - WHO et Ministere",
+                  statsLabel:["Ofele","Maladi","Ndimi","Bokeli"],statsVal:["\u2713","15+","3","100%"],
+                  askAI:"Tuna IA \u2192",learnMore:"Yeba lisusu",modalClose:"Zonga",
+                  tips:"Toli ya ntina:",emergency:"\u{1F6A8} Bokasi: 112",
+                  aboutTitle:"Mpo na nini Sante Congo?",
+                  aboutText:"RDC ezali na monganga moko mpo na bato 10.000. Sante Congo AI etomboli likama oyo na kopesa makambo ya bokolongono, ofele, na ndimi na yo.",
+                  partners:"Makambo ya ofisye ya:",cardsTitle:"Mituna ya Bokolongono",cardsSub:"Kwela mpo na koyeba",
+             },
+          sw:{name:"Kiswahili",flag:"\u{1F1F9}\u{1F1FF}",
+                  welcome:"Habari! Mimi ni msaidizi wako wa afya bila malipo. Niulize maswali kuhusu afya, dalili au dawa.",
+                  placeholder:"Andika swali lako hapa...",send:"Tuma",clear:"Mazungumzo mapya",
+                  home:"Nyumbani",chat:"IA Afya",
+                  heroTitle:"Afya yako, kipaumbele chetu",
+                  heroSub:"Msaidizi wa afya bure kwa Wakongo wote - Data ya WHO na Wizara ya Afya",
+                  statsLabel:["Bure","Magonjwa","Lugha","Ufikiaji"],statsVal:["\u2713","15+","3","100%"],
+                  askAI:"Uliza AI \u2192",learnMore:"Jifunze zaidi",modalClose:"Funga",
+                  tips:"Vidokezo muhimu:",emergency:"\u{1F6A8} Dharura: 112",
+                  aboutTitle:"Kwa nini Sante Congo?",
+                  aboutText:"DRC ina daktari mmoja kwa watu 10,000. Sante Congo AI inaziba pengo hili kwa kutoa taarifa za afya za kuaminika, bure, kwa lugha yako.",
+                  partners:"Data rasmi kutoka:",cardsTitle:"Mada za Afya",cardsSub:"Bonyeza kuchunguza",
+             },
+      };
+
+      const SYS = {
+          fr:"Tu es un assistant sante gratuit pour les citoyens de la RDC. Utilise les donnees OMS, Ministere de la Sante RDC et UNICEF. Reponds en francais simple. Couvre: paludisme, cholera, rougeole, Ebola, nutrition, sante maternelle, medicaments, prevention. Dis toujours d'appeler le 112 pour urgences. Sois bienveillant, clair et concis.",
+          ln:"Ozali motambolisi ya bokolongono ya ofele mpo na RDC. Kozongisa na Lingala ya pete. Maladi: paludisme, kolera, masele, Ebola, bilei, basi na bana, nkisi. Loba benga 112 mpo na bokasi. Ozali penza mpe mokuse.",
+          sw:"Wewe ni msaidizi wa afya bila malipo kwa raia wa DRC. Tumia data ya WHO, Wizara ya Afya ya DRC na UNICEF. Jibu kwa Kiswahili rahisi. Dalili: malaria, kipindupindu, surua, Ebola, lishe, mama na mtoto, dawa, kinga. Sema piga 112 kwa dharura. Kuwa wema, wazi na mfupi.",
+      };
+
+      const CARDS = [
+        {id:1,emoji:"\u{1F99F}",color:"#FF6B2B",bg:"#FFF3EE",border:"#FFCBA4",
+             fr:{t:"Paludisme",sub:"Malaria",d:"La maladie la plus mortelle en RDC, transmise par les moustiques.",tips:["Dormez sous moustiquaire traitee","Portez des habits longs le soir","Consultez des fievre + frissons","Traitement: ACT disponible"]},
+             ln:{t:"Paludisme",sub:"Maladi ya Mbu",d:"Maladi ya kokufa mingi na RDC, ebimaka na mbu.",tips:["Lala na moustiquaire","Lata bilamba ya molayi butu","Tala monganga soki fievure","Nkisi: ACT"]},
+             sw:{t:"Malaria",sub:"Ugonjwa wa Mbu",d:"Ugonjwa hatari zaidi DRC, husambazwa na mbu.",tips:["Lala chini ya chandarua","Vaa nguo ndefu usiku","Nenda daktari ukipata homa","Dawa: ACT"]},
+        },
+        {id:2,emoji:"\u{1F4A7}",color:"#00B4D8",bg:"#E0F7FF",border:"#90E0EF",
+             fr:{t:"Cholera",sub:"Maladies hydriques",d:"Infection intestinale grave causee par l'eau contaminee.",tips:["Buvez eau bouillie ou traitee","Lavez mains avant manger","SRO en cas de diarrhee grave","Evitez crudites non lavees"]},
+             ln:{t:"Kolera",sub:"Maladi ya Mayi",d:"Maladi ya nzoto oyo euti na mayi ya mbeba.",tips:["Nwa mayi ya kobima","Suku maboko liboso ya kolya","SRO soki pasi ya suka","Keba na biloko ya mbeba"]},
+             sw:{t:"Kipindupindu",sub:"Magonjwa ya Maji",d:"Maambukizo makali ya matumbo kutoka maji machafu.",tips:["Kunywa maji yaliyochemshwa","Osha mikono kabla ya kula","ORS kwa kuhara kali","Epuka mboga mbichi zisizo osha"]},
+        },
+        {id:3,emoji:"\u{1F931}",color:"#E91E8C",bg:"#FFF0F8",border:"#F9A8D4",
+             fr:{t:"Sante Maternelle",sub:"Mere et Enfant",d:"La RDC a l'un des taux de mortalite maternelle les plus eleves au monde.",tips:["4 consultations prenatales minimum","Accouchez dans un centre de sante","Allaitez exclusivement 6 mois","Vaccinations completes pour bebe"]},
+             ln:{t:"Bokolongono ya Basi",sub:"Mama et Mwana",d:"RDC ezali na basi mingi oyo bakufi na kobota.",tips:["Tala monganga mbala 4 liboso kobota","Bota na centre ya bokolongono","Pesa mwana lelo tolo 6 basanza","Makila mpo na mwana"]},
+             sw:{t:"Afya ya Mama",sub:"Mama et Mtoto",d:"DRC ina vifo vingi vya mama wakati wa kujifungua.",tips:["Ziara 4 za ujauzito","Jifungue kituo cha afya","Nyonyesha miezi 6 kamili","Chanjo zote kwa mtoto"]},
+        },
+        {id:4,emoji:"\u{1F957}",color:"#22C55E",bg:"#EDFFF5",border:"#86EFAC",
+             fr:{t:"Nutrition",sub:"Alimentation saine",d:"69% des Congolais souffrent de sous-nutrition. La malnutrition est evitable.",tips:["Variez les aliments chaque jour","Legumineuses: haricots, lentilles","Vitamine A: patate douce, mangue","Fer: feuilles vertes, viande"]},
+             ln:{t:"Bilei ya Malamu",sub:"Kolya malamu",d:"Bato mingi ya RDC bazali na nzala ya makasi.",tips:["Lia biloko ndenge na ndenge mokolo","Feve, lentilles ezali malamu","Vitamine A: patate, mangue","Fer: nzai ya ndunda, nyama"]},
+             sw:{t:"Lishe",sub:"Chakula Bora",d:"69% ya Wakongo wanakabiliwa na utapiamlo.",tips:["Kula vyakula mbalimbali kila siku","Mikunde: maharage, dengu","Vitamini A: viazi vitamu, embe","Chuma: mboga za majani, nyama"]},
+        },
+        {id:5,emoji:"\u{1F48A}",color:"#9B59B6",bg:"#F5F0FF",border:"#D8B4FE",
+             fr:{t:"Medicaments",sub:"Guide pharmacie",d:"Connaitre les medicaments essentiels peut sauver des vies en zone rurale.",tips:["Paracetamol: fievre et douleurs","SRO: rehydratation diarrhee","ACT: traitement antipaludique","Ne jamais arreter antibiotiques"]},
+             ln:{t:"Nkisi",sub:"Guide ya Nkisi",d:"Koyeba nkisi ya ntina ekoki kobikisa bomoi.",tips:["Paracetamol: fievure mpe pasi","SRO: mayi mpo na suka","ACT: nkisi ya paludisme","Kakisa antibiotiques tii suka"]},
+             sw:{t:"Dawa",sub:"Mwongozo wa Dawa",d:"Kujua dawa muhimu kunaweza kuokoa maisha.",tips:["Paracetamol: homa na maumivu","ORS: kuzuia upungufu wa maji","ACT: dawa ya malaria","Kamali antibiotiki hadi mwisho"]},
+        },
+        {id:6,emoji:"\u{1F6E1}\uFE0F",color:"#007FCC",bg:"#E6F4FB",border:"#93C5FD",
+             fr:{t:"Prevention",sub:"Protegez-vous",d:"La prevention est le moyen le plus efficace de reduire les maladies en RDC.",tips:["Lavez-vous les mains 5 fois/jour","Vaccinations a jour pour la famille","Eau propre = vie sauvee","Consulter tot = guerir vite"]},
+             ln:{t:"Kobatela Nzoto",sub:"Keba na maladi",d:"Kobatela nzoto ekoki kobikisa bato mingi.",tips:["Suku maboko mbala 5 mokolo","Makila mpo na famille","Mayi ya suka = bomoi","Tala monganga nokinoki"]},
+             sw:{t:"Kinga",sub:"Jilinde",d:"Kinga ndiyo njia bora zaidi ya kupunguza magonjwa.",tips:["Osha mikono mara 5 kwa siku","Chanjo zote kwa familia","Maji safi = maisha yaliyookolewa","Tafuta daktari mapema"]},
+        },
+        ];
+
+               const PARTNERS = [
+                 {logo:"\u{1F3E5}",name:"Ministere de la Sante RDC"},
+                 {logo:"\u{1F30D}",name:"WHO / OMS"},
+                 {logo:"\u{1F984}",name:"UNICEF"},
+                 {logo:"\u{1F499}",name:"PATH Digital Health"},
+                 {logo:"\u{1F4CA}",name:"HDX Humanitarian Data"},
+                 ];
+
+      const API_ENDPOINT = "/api/chat";
+
+      function App() {
+          const [lang, setLang] = useState("fr");
+          const [msgs, setMsgs] = useState([]);
+          const [input, setInput] = useState("");
+          const [loading, setLoading] = useState(false);
+          const [started, setStarted] = useState(false);
+          const [tab, setTab] = useState("home");
+          const [zoomed, setZoomed] = useState(null);
+          const [hovCard, setHovCard] = useState(null);
+          const endRef = useRef(null);
+          const inputRef = useRef(null);
+          const t = LANGS[lang];
+
+          useEffect(() => { endRef.current?.scrollIntoView({behavior:"smooth"}); }, [msgs, loading]);
+
+          const startChat = (l) => { setLang(l); setStarted(true); setMsgs([{role:"assistant",text:LANGS[l].welcome}]); setTab("home"); };
+
+          const send = async (q=null) => {
+                const msg = (q||input).trim();
+                if (!msg||loading) return;
+                const newMsgs = [...msgs,{role:"user",text:msg}];
+                setMsgs(newMsgs); setInput(""); setLoading(true);
+                try {
+                        const res = await fetch(API_ENDPOINT, {
+                                  method:"POST",
+                                  headers:{"Content-Type":"application/json"},
+                                  body:JSON.stringify({
+                                              system: SYS[lang],
+                                              messages: newMsgs.map(m=>({role:m.role==="assistant"?"assistant":"user",content:m.text}))
+                                  })
+                        });
+                        const data = await res.json();
+                        setMsgs(m=>[...m,{role:"assistant",text:data.text||data.error||"Erreur."}]);
+                } catch { setMsgs(m=>[...m,{role:"assistant",text:"\u274C Connexion echouee. Verifiez reseau."}]); }
+                setLoading(false);
+                setTimeout(()=>inputRef.current?.focus(),100);
+          };
+
+          const askAI = (card) => {
+                const q = lang==="fr"?"Dis-moi tout sur "+card.fr.t+" en RDC: symptomes, traitement et prevention."
+                        :lang==="ln"?"Lobela ngai makambo nyonso na "+card.ln.t+": bango, nkisi mpe kobatela."
+                        :"Niambie kila kitu kuhusu "+card.sw.t+" DRC: dalili, matibabu na kinga.";
+                setZoomed(null); setTab("chat");
+                setTimeout(()=>send(q),100);
+          };
+
+          const cd = (card) => card[lang]||card.fr;
+
+              if (!started) return (
+                    <div style={{minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
+                                       background:"linear-gradient(155deg,#005F99 0%,#007FCC 45%,#004e80 100%)",
+                                       padding:"32px 20px",textAlign:"center",position:"relative",overflow:"hidden"}}>
+                            <div style={{position:"absolute",inset:0,pointerEvents:"none",
+                                                 background:"linear-gradient(135deg,transparent 40%,#CE1021 40%,#CE1021 42.5%,#F7D618 42.5%,#F7D618 45%,transparent 45%)",
+                                                 opacity:.18}}/>
+                            <div style={{width:90,height:90,borderRadius:"50%",background:"linear-gradient(135deg,#F7D618,#ffb700)",
+                                                 display:"flex",alignItems:"center",justifyContent:"center",fontSize:44,marginBottom:16,
+                                                 boxShadow:"0 8px 32px rgba(247,214,24,.45),0 0 0 8px rgba(247,214,24,.15)"}}>&#127973;</div>
+                            <h1 style={{color:"#FFFFFF",fontSize:"clamp(26px,7vw,40px)",fontWeight:900,margin:"0 0 8px"}}>Sante Congo AI</h1>
+                            <div style={{background:"linear-gradient(90deg,#CE1021,#F7D618)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",
+                                                 fontWeight:800,fontSize:"clamp(13px,3.5vw,18px)",marginBottom:10}}>
+                                      100% Gratuit - 100% Ofele - 100% Bure
+                            </div>
+                            <p style={{color:"rgba(255,255,255,.75)",fontSize:13,maxWidth:400,margin:"0 auto 28px",lineHeight:1.6}}>
+                                      Assistant sante intelligent pour tous les Congolais.<br/>Donnees OMS - Ministere de la Sante - UNICEF
+                            </p>
+                            <p style={{color:"#F7D618",fontWeight:700,fontSize:16,marginBottom:14}}>Choisissez votre langue :</p>
+                            <div style={{display:"flex",gap:12,flexWrap:"wrap",justifyContent:"center",marginBottom:32}}>
+                              {Object.entries(LANGS).map(([k,v])=>(
+                                <button key={k} onClick={()=>startChat(k)} style={{
+                                              background:k==="fr"?"linear-gradient(135deg,#F7D618,#ffb700)":"rgba(255,255,255,.12)",
+                                              color:k==="fr"?"#005F99":"#FFFFFF",border:k==="fr"?"none":"1.5px solid rgba(255,255,255,.3)",
+                                              borderRadius:30,padding:"14px 32px",fontSize:16,fontWeight:700,cursor:"pointer",
+                                              boxShadow:k==="fr"?"0 6px 20px rgba(247,214,24,.4)":"none"}}>
+                                  {v.flag} {v.name}
+                                </button>
+                              ))}
+                            </div>
+                            <div style={{display:"flex",width:"100%",maxWidth:280,height:5,borderRadius:3,overflow:"hidden",marginBottom:18}}>
+                                      <div style={{flex:1,background:"#007FCC"}}/><div style={{flex:1,background:"#F7D618"}}/><div style={{flex:1,background:"#CE1021"}}/>
+                            </div>
+                            <p style={{color:"rgba(255,255,255,.45)",fontSize:11}}>&#127464;&#127465; Republique Democratique du Congo - Urgences: 112</p>
+                    </div>
+                  );
+
+          const ZoomModal = () => !zoomed ? null : (
+                <div onClick={()=>setZoomed(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.65)",zIndex:999,
+                                                                 display:"flex",alignItems:"center",justifyContent:"center",padding:16,
+                                                                 backdropFilter:"blur(4px)",animation:"fadeIn .2s ease"}}>
+                        <div onClick={e=>e.stopPropagation()} style={{background:"#FFFFFF",borderRadius:24,maxWidth:460,width:"100%",
+                                                                              overflow:"hidden",boxShadow:"0 24px 80px rgba(0,0,0,.35)",animation:"slideUp .25s ease"}}>
+                                  <div style={{background:"linear-gradient(135deg,"+zoomed.color+","+zoomed.color+"dd)",padding:"24px 20px 20px",textAlign:"center",position:"relative"}}>
+                                              <div style={{position:"absolute",top:0,left:0,right:0,bottom:0,opacity:.12,
+                                                                       backgroundImage:"radial-gradient(circle, white 1px, transparent 1px)",backgroundSize:"20px 20px"}}/>
+                                              <div style={{fontSize:60,marginBottom:8}}>{zoomed.emoji}</div>
+                                              <h2 style={{color:"#FFFFFF",margin:"0 0 4px",fontSize:22,fontWeight:800}}>{cd(zoomed).t}</h2>
+                                              <p style={{color:"rgba(255,255,255,.85)",margin:0,fontSize:13}}>{cd(zoomed).sub}</p>
+                                  </div>
+                                  <div style={{height:4,background:"linear-gradient(90deg,#007FCC,#F7D618,#CE1021)"}}/>
+                                  <div style={{padding:"20px 20px 24px"}}>
+                                              <p style={{color:"#1A1A2E",fontSize:14,lineHeight:1.6,marginBottom:16,background:zoomed.bg,
+                                                                     borderRadius:12,padding:"12px 14px",border:"1px solid "+zoomed.border}}>{cd(zoomed).d}</p>
+                                              <p style={{fontWeight:700,color:zoomed.color,marginBottom:10,fontSize:14}}>{t.tips}</p>
+                                              <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:20}}>
+                                                {cd(zoomed).tips.map((tip,i)=>(
+                                <div key={i} style={{display:"flex",alignItems:"flex-start",gap:10}}>
+                                                  <div style={{width:22,height:22,borderRadius:"50%",background:zoomed.color,color:"#FFFFFF",
+                                                                                 display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,flexShrink:0}}>{i+1}</div>
+                                                  <span style={{fontSize:13.5,color:"#1A1A2E",lineHeight:1.5}}>{tip}</span>
+                                </div>
+                              ))}
+                                              </div>
+                                              <div style={{display:"flex",gap:10}}>
+                                                            <button onClick={()=>askAI(zoomed)} style={{flex:1,background:"linear-gradient(135deg,#007FCC,#005F99)",
+                                                                                                                      color:"#FFFFFF",border:"none",borderRadius:14,padding:"13px",fontSize:14,fontWeight:700,cursor:"pointer"}}>
+                                                              {t.askAI}
+                                                            </button>
+                                                            <button onClick={()=>setZoomed(null)} style={{padding:"13px 18px",background:"#F3F4F6",border:"none",
+                                                                                                                        borderRadius:14,fontSize:13,color:"#6B7280",cursor:"pointer",fontWeight:600}}>{t.modalClose}</button>
+                                              </div>
+                                              <p style={{textAlign:"center",color:"#CE1021",fontSize:12,fontWeight:600,margin:"14px 0 0"}}>{t.emergency}</p>
+                                  </div>
+                        </div>
+                </div>
+              );
+
+          const HomeTab = () => (
+                <div style={{overflowY:"auto",flex:1}}>
+                        <div style={{background:"linear-gradient(135deg,#005F99,#007FCC)",padding:"28px 20px 32px",
+                                             textAlign:"center",position:"relative",overflow:"hidden"}}>
+                                  <div style={{position:"absolute",inset:0,
+                                                         background:"linear-gradient(135deg,transparent 55%,#CE1021 55%,#CE1021 57.5%,#F7D618 57.5%,#F7D618 60%,transparent 60%)",
+                                                         opacity:.2,pointerEvents:"none"}}/>
+                                  <div style={{fontSize:48,marginBottom:10}}>&#127973;</div>
+                                  <h1 style={{color:"#FFFFFF",fontSize:"clamp(18px,5vw,26px)",fontWeight:900,margin:"0 0 8px",lineHeight:1.3}}>{t.heroTitle}</h1>
+                                  <p style={{color:"rgba(255,255,255,.8)",fontSize:13,maxWidth:380,margin:"0 auto 20px",lineHeight:1.6}}>{t.heroSub}</p>
+                                  <button onClick={()=>setTab("chat")} style={{background:"linear-gradient(135deg,#F7D618,#ffb700)",color:"#005F99",
+                                                                                         border:"none",borderRadius:28,padding:"12px 30px",fontSize:15,fontWeight:800,cursor:"pointer",
+                                                                                         boxShadow:"0 6px 20px rgba(247,214,24,.4)"}}>{t.askAI}</button>
+                        </div>
+                        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",background:"#F7D618"}}>
+                          {t.statsVal.map((v,i)=>(
+                            <div key={i} style={{textAlign:"center",padding:"12px 6px",borderRight:i<3?"1px solid rgba(0,0,0,.08)":"none"}}>
+                                          <div style={{fontSize:16,fontWeight:900,color:"#005F99"}}>{v}</div>
+                                          <div style={{fontSize:9,color:"#005F99",opacity:.75,fontWeight:600,textTransform:"uppercase",letterSpacing:.5}}>{t.statsLabel[i]}</div>
+                            </div>
+                          ))}
+                        </div>
+                        <div style={{padding:"20px 14px 8px"}}>
+                                  <h2 style={{textAlign:"center",color:"#1A1A2E",fontSize:17,fontWeight:800,marginBottom:4}}>{t.cardsTitle}</h2>
+                                  <p style={{textAlign:"center",color:"#6B7280",fontSize:12,marginBottom:16}}>{t.cardsSub}</p>
+                                  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(148px,1fr))",gap:12}}>
+                                    {CARDS.map(card=>{
+                              const d=cd(card); const hov=hovCard===card.id;
+                              return (
+                                              <div key={card.id} className="card" onClick={()=>setZoomed(card)}
+                                                                onMouseEnter={()=>setHovCard(card.id)} onMouseLeave={()=>setHovCard(null)}
+                                                                style={{background:hov?card.color:card.bg,border:"2px solid "+(hov?card.color:card.border),
+                                                                                          borderRadius:18,padding:"18px 14px 14px",cursor:"pointer",textAlign:"center",
+                                                                                          transition:"all .2s ease",boxShadow:hov?"0 12px 32px "+card.color+"40":"0 2px 8px rgba(0,0,0,.07)"}}>
+                                                                <div style={{fontSize:36,marginBottom:10}}>{card.emoji}</div>
+                                                                <div style={{fontWeight:800,fontSize:13.5,color:hov?"#FFFFFF":"#1A1A2E",marginBottom:3,lineHeight:1.3}}>{d.t}</div>
+                                                                <div style={{fontSize:11,color:hov?"rgba(255,255,255,.8)":"#6B7280",marginBottom:10}}>{d.sub}</div>
+                                                                <div style={{background:card.color,color:"#FFFFFF",borderRadius:10,padding:"5px 10px",fontSize:10,fontWeight:700,display:"inline-block"}}>
+                                                                  {t.learnMore} &#8594;
+                                                                </div>
+                                              </div>
+                                            );
+                })}
+                                  </div>
+                        </div>
+                        <div style={{margin:"16px 14px",background:"linear-gradient(135deg,#F0F8FF,#FFFBE6)",
+                                             borderRadius:18,padding:"18px 16px",border:"1px solid #E6F4FB"}}>
+                                  <p style={{textAlign:"center",fontWeight:700,color:"#6B7280",fontSize:11,textTransform:"uppercase",letterSpacing:1,marginBottom:14}}>{t.partners}</p>
+                                  <div style={{display:"flex",flexWrap:"wrap",gap:10,justifyContent:"center"}}>
+                                    {PARTNERS.map((p,i)=>(
+                              <div key={i} style={{display:"flex",alignItems:"center",gap:6,background:"#FFFFFF",
+                                                                 borderRadius:20,padding:"7px 13px",fontSize:12,fontWeight:600,color:"#1A1A2E",
+                                                                 boxShadow:"0 2px 8px rgba(0,0,0,.08)"}}>
+                                              <span style={{fontSize:16}}>{p.logo}</span>{p.name}
+                              </div>
+                            ))}
+                                  </div>
+                        </div>
+                        <div style={{margin:"0 14px 24px",background:"linear-gradient(135deg,rgba(206,16,33,0.09),rgba(206,16,33,0.03))",
+                                             borderRadius:18,padding:"18px 16px",border:"1px solid rgba(206,16,33,0.19)"}}>
+                                  <h3 style={{color:"#CE1021",fontWeight:800,fontSize:15,marginBottom:8}}>{t.aboutTitle}</h3>
+                                  <p style={{color:"#1A1A2E",fontSize:13,lineHeight:1.65,margin:0}}>{t.aboutText}</p>
+                        </div>
+                </div>
+              );
+
+          const ChatTab = () => (
+                <>
+                        <div style={{flex:1,overflowY:"auto",padding:"12px 10px",display:"flex",flexDirection:"column",gap:8}}>
+                          {msgs.map((m,i)=>(
+                            <div key={i} style={{display:"flex",justifyContent:m.role==="user"?"flex-end":"flex-start",alignItems:"flex-end",gap:6}}>
+                              {m.role==="assistant"&&<div style={{width:30,height:30,borderRadius:"50%",
+                                                                                background:"linear-gradient(135deg,#F7D618,#ffb700)",
+                                                                                display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,flexShrink:0}}>&#127973;</div>}
+                                          <div style={m.role==="user"?{
+                                            background:"linear-gradient(135deg,#007FCC,#005F99)",color:"#FFFFFF",
+                                            borderRadius:"18px 18px 4px 18px",padding:"10px 14px",maxWidth:"78%",fontSize:14,lineHeight:1.55,
+                            }:{background:"#FFFFFF",color:"#1A1A2E",border:"1px solid #D0E8F7",
+                                             borderRadius:"18px 18px 18px 4px",padding:"10px 14px",maxWidth:"78%",fontSize:14,lineHeight:1.55,
+                                             boxShadow:"0 2px 6px rgba(0,0,0,.07)"}}>
+                                            {m.text.split("\n").map((l,j)=><span key={j}>{l}<br/></span>)}
+                                          </div>
+                            </div>
+                          ))}
+                          {loading&&(
+                            <div style={{display:"flex",alignItems:"flex-end",gap:6}}>
+                                          <div style={{width:30,height:30,borderRadius:"50%",background:"linear-gradient(135deg,#F7D618,#ffb700)",
+                                                                     display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>&#127973;</div>
+                                          <div style={{background:"#FFFFFF",border:"1px solid #D0E8F7",borderRadius:"18px 18px 18px 4px",
+                                                                     padding:"12px 18px",boxShadow:"0 2px 6px rgba(0,0,0,.07)"}}>
+                                                          <span style={{display:"inline-flex",gap:5}}>
+                                                            {[0,1,2].map(i=><span key={i} style={{width:8,height:8,borderRadius:"50%",background:"#007FCC",
+                                                                                                                    display:"inline-block",animation:"bounce 1.2s "+i*.2+"s infinite"}}/>)}
+                                                          </span>
+                                          </div>
+                            </div>
+                          )}
+                                  <div ref={endRef}/>
+                        </div>
+                        <div style={{padding:"8px 10px 4px",overflowX:"auto",display:"flex",gap:8,flexShrink:0}}>
+                          {CARDS.slice(0,4).map(card=>(
+                            <button key={card.id} onClick={()=>askAI(card)} style={{
+                                          background:card.bg,border:"1.5px solid "+card.border,borderRadius:20,
+                                          padding:"6px 13px",fontSize:11.5,fontWeight:600,color:card.color,
+                                          cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>
+                              {card.emoji} {cd(card).t}
+                            </button>
+                          ))}
+                        </div>
+                        <div style={{background:"#FFFFFF",borderTop:"2px solid #D0E8F7",padding:"10px 12px 6px",flexShrink:0,
+                          boxShadow:"0 -2px 10px rgba(0,0,0,.06)"}}>
+                                  <div style={{display:"flex",gap:8,alignItems:"flex-end"}}>
+                                              <textarea ref={inputRef} rows={2} value={input}
+                                                            onChange={e=>setInput(e.target.value)}
+                                                            onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}}}
+                                                            placeholder={t.placeholder} disabled={loading}
+                                                            style={{flex:1,border:"1.5px solid #B0D8F0",borderRadius:14,padding:"9px 13px",
+                                                                                  fontSize:14,resize:"none",fontFamily:"inherit",background:"#F0F8FF",color:"#1A1A2E",lineHeight:1.4}}/>
+                                              <button onClick={()=>send()} disabled={loading||!input.trim()} style={{
+                              width:46,height:46,borderRadius:"50%",
+                              background:input.trim()&&!loading?"linear-gradient(135deg,#007FCC,#005F99)":"#CBD5E0",
+                              color:"#FFFFFF",border:"none",fontSize:20,cursor:input.trim()&&!loading?"pointer":"not-allowed"}}>&#10148;</button>
+                                  </div>
+                                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:6}}>
+                                              <button onClick={()=>setMsgs([{role:"assistant",text:t.welcome}])} style={{
+                              background:"none",border:"none",color:"#CE1021",fontSize:11,cursor:"pointer",textDecoration:"underline",padding:0}}>{t.clear}</button>
+                                              <div style={{display:"flex",gap:4,alignItems:"center"}}>
+                                                {["#007FCC","#F7D618","#CE1021"].map((c,i)=><div key={i} style={{width:9,height:9,borderRadius:"50%",background:c}}/>)}
+                                                            <span style={{fontSize:10,color:"#6B7280",marginLeft:3}}>&#127464;&#127465;</span>
+                                              </div>
+                                  </div>
+                        </div>
+                </>
+              );
+
+          return (
+                <div style={{display:"flex",flexDirection:"column",height:"100vh",
+                                   maxWidth:560,margin:"0 auto",fontFamily:"'Segoe UI',Arial,sans-serif",background:"#F0F8FF"}}>
+                        <div style={{background:"linear-gradient(135deg,#005F99,#007FCC)",
+                                             padding:"10px 14px",display:"flex",alignItems:"center",justifyContent:"space-between",
+                                             flexShrink:0,boxShadow:"0 2px 10px rgba(0,0,0,.2)",position:"relative",overflow:"hidden"}}>
+                                  <div style={{position:"absolute",bottom:0,left:0,right:0,height:3,
+                                                         background:"linear-gradient(90deg,#007FCC 33%,#F7D618 33%,#F7D618 66%,#CE1021 66%)"}}/>
+                                  <div style={{display:"flex",alignItems:"center",gap:10}}>
+                                              <div style={{width:38,height:38,borderRadius:"50%",background:"linear-gradient(135deg,#F7D618,#ffb700)",
+                                                                       display:"flex",alignItems:"center",justifyContent:"center",fontSize:19}}>&#127973;</div>
+                                              <div>
+                                                            <div style={{color:"#FFFFFF",fontWeight:800,fontSize:15}}>Sante Congo AI</div>
+                                                            <div style={{color:"rgba(255,255,255,.7)",fontSize:10}}>WHO - MoH RDC - UNICEF - 100% Gratuit</div>
+                                              </div>
+                                  </div>
+                                  <select value={lang} onChange={e=>{const l=e.target.value;setLang(l);setMsgs([{role:"assistant",text:LANGS[l].welcome}]);}}
+                                              style={{background:"rgba(255,255,255,.15)",color:"#FFFFFF",border:"1px solid rgba(255,255,255,.3)",
+                                                                  borderRadius:10,padding:"5px 8px",fontSize:12,cursor:"pointer",outline:"none"}}>
+                                    {Object.entries(LANGS).map(([k,v])=><option key={k} value={k} style={{color:"#1A1A2E"}}>{v.flag} {v.name}</option>)}
+                                  </select>
+                        </div>
+                        <div style={{background:"#FFFBE6",borderBottom:"2px solid #F7D618",padding:"5px 14px",
+                                             fontSize:11,color:"#7A5900",textAlign:"center",flexShrink:0,fontWeight:600}}>
+                                  &#9877;&#65039; {lang==="fr"?"Service informatif. Urgences:":lang==="ln"?"Bokasi:":"Taarifa tu. Dharura:"} <strong>112</strong>
+                        </div>
+                        <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+                          {tab==="home"?<HomeTab/>:<ChatTab/>}
+                        </div>
+                        <div style={{display:"flex",background:"#FFFFFF",borderTop:"2px solid #E2EBF5",
+                                             boxShadow:"0 -4px 16px rgba(0,0,0,.08)",flexShrink:0}}>
+                          {[{key:"home",icon:"\u{1F3E0}",label:t.home},{key:"chat",icon:"\u{1F4AC}",label:t.chat}].map(item=>(
+                            <button key={item.key} onClick={()=>setTab(item.key)} style={{
+                                          flex:1,padding:"10px 8px 8px",background:"none",border:"none",cursor:"pointer",
+                                          borderTop:tab===item.key?"3px solid #007FCC":"3px solid transparent",
+                                          display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+                                          <span style={{fontSize:20}}>{item.icon}</span>
+                                          <span style={{fontSize:10,fontWeight:tab===item.key?700:500,color:tab===item.key?"#007FCC":"#6B7280"}}>{item.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                        <ZoomModal/>
+                </div>
+              );
+      }
+
+      ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+    </script>
+  </body>
+</html>html>
+  </body>
+    </style></title>
+  </head>
