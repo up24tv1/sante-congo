@@ -1,0 +1,10 @@
+{
+    "name": "Santé Congo AI",
+    "short_name": "SantéCongo",
+    "description": "Assistant santé gratuit pour la RDC",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#F0F8FF",
+    "theme_color": "#007FCC",
+    "icons": []
+}
